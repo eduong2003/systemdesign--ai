@@ -716,6 +716,115 @@ footer .brand {
 .ai-notice p {
   margin: 10px 0 0;
 }
+.ai-review {
+  padding-top: 22px;
+  border-top: 1px solid var(--border);
+}
+.ai-review > p {
+  margin: 10px 0 14px;
+}
+.tiny-note,
+.tutor-disclosure {
+  font-size: 10px !important;
+  margin: 10px 0 0 !important;
+}
+.tutor-answer {
+  margin-top: 20px;
+  padding: 18px;
+  border-left: 2px solid var(--green);
+  background: #16221c;
+}
+.tutor-answer h3 {
+  font-size: 16px;
+  margin-bottom: 10px;
+}
+.tutor-answer p,
+.chat-message p {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  margin: 0;
+}
+.tutor-page {
+  max-width: 850px;
+  text-align: left;
+}
+.tutor-intro {
+  text-align: center;
+  padding-bottom: 28px;
+  border-bottom: 1px solid var(--border);
+}
+.tutor-intro p {
+  margin: 16px auto 0;
+}
+.tutor-chat {
+  margin-top: 26px;
+}
+.tutor-select,
+.tutor-form textarea {
+  width: 100%;
+  border: 1px solid #344453;
+  border-radius: 6px;
+  background: #0b121b;
+  color: #d9e4ed;
+  padding: 12px;
+  margin-top: 8px;
+}
+.tutor-select {
+  min-height: 44px;
+}
+.chat-log {
+  min-height: 180px;
+  max-height: 430px;
+  overflow-y: auto;
+  margin: 18px 0;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #0d141d;
+}
+.chat-empty {
+  margin: 0;
+  font-size: 12px;
+}
+.chat-message {
+  padding: 13px 0;
+  border-bottom: 1px solid var(--border);
+}
+.chat-message:last-child {
+  border-bottom: 0;
+}
+.chat-message .eyebrow {
+  display: block;
+  margin-bottom: 6px;
+}
+.chat-message.user .eyebrow {
+  color: #a7c7e8;
+}
+.chat-message p {
+  font-size: 13px;
+}
+.tutor-form textarea {
+  display: block;
+  resize: vertical;
+  font: inherit;
+  font-size: 13px;
+}
+.tutor-form-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 10px;
+}
+.tutor-page > .button {
+  margin-top: 22px;
+}
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
 .success {
   color: var(--green);
 }

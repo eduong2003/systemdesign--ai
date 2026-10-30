@@ -1,28 +1,23 @@
 import Link from "next/link";
 import { Sparkles } from "lucide-react";
+import { AiTutorChat } from "@/components/ai-tutor";
 export const metadata = { title: "AI Tutor" };
 export default function Page() {
   return (
     <section className="shell section">
-      <div className="tutor card">
-        <Sparkles size={36} />
-        <span className="eyebrow">COMING IN PHASE 2</span>
-        <h1 className="page-title">
-          A thinking partner
-          <br />
-          for your next design.
-        </h1>
-        <p>
-          The AI tutor will help you explore architecture, question assumptions,
-          and understand tradeoffs. Chat and automated feedback are planned for
-          the next phase.
-        </p>
-        <p>
-          For now, explore the learning library and use each challenge&apos;s
-          hints and review checklist. The MVP works without an OpenAI API key.
-        </p>
+      <div className="tutor tutor-page card">
+        <div className="tutor-intro">
+          <Sparkles size={36} />
+          <span className="eyebrow">SYSTEM DESIGN COACH</span>
+          <h1 className="page-title">Think through the tradeoffs.</h1>
+          <p>
+            Work through a challenge with a Socratic tutor. Choose a problem and
+            ask about an architecture decision, scaling limit, or failure mode.
+          </p>
+        </div>
+        <AiTutorChat />
         <Link className="button button-primary" href="/learn">
-          Explore the learning library →
+          Explore the learning library
         </Link>
       </div>
     </section>

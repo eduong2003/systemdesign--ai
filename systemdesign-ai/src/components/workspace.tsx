@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { Save, CheckCircle2 } from "lucide-react";
 import { Button } from "./ui/button";
+import { AiReview } from "./ai-tutor";
 import { readProgress, saveProgress, useProgress } from "@/lib/progress";
 import type { Problem } from "@/lib/data";
 export function Workspace({ problem }: { problem: Problem }) {
@@ -103,13 +104,7 @@ export function Workspace({ problem }: { problem: Problem }) {
           <li>Which consistency and latency tradeoffs did you choose?</li>
         </ul>
       </div>
-      <div className="ai-notice">
-        <span className="eyebrow">AI FEEDBACK · PHASE 2</span>
-        <p>
-          AI evaluation is coming in the next phase. No API key is required for
-          this MVP.
-        </p>
-      </div>
+      <AiReview problem={problem} design={text} />
     </div>
   );
 }

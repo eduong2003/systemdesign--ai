@@ -72,3 +72,49 @@ test("unknown routes return a useful 404", async ({ page }) => {
     page.getByRole("link", { name: "Browse challenges" }),
   ).toBeVisible();
 });
+
+test("challenge design review shows the AI response", async ({ page }) => {
+  await page.route("**/api/tutor", (route) =>
+    route.fulfill({
+      json: {
+        answer:
+          "What is strong\nYour design uses a cache for popular redirects.\n\nBiggest gaps\nExplain how you handle cache misses.",
+      },
+    }),
+  );
+  await page.goto("/problems/url-shortener");
+  await page.getByLabel("DESIGN NOTES").fill(
+    "Use stateless API servers behind a load balancer. Store URL mappings in PostgreSQL with a unique short-code index. Cache popular redirects with a TTL. Retry code collisions and monitor latency.",
+  );
+  await page.getByRole("button", { name: "Review my design" }).click();
+  await expect(page.getByRole("heading", { name: "Design feedback" })).toBeVisible();
+  await expect(page.getByText(/Explain how you handle cache misses/)).toBeVisible();
+});
+
+test("AI tutor chat uses the selected challenge context", async ({ page }) => {
+  await page.route("**/api/tutor", async (route) => {
+    const request = route.request();
+    const payload = request.postDataJSON();
+    expect(payload).toMatchObject({
+      mode: "chat",
+      problemSlug: "url-shortener",
+      message: "How should I handle cache misses?",
+    });
+    await route.fulfill({ json: { answer: "What latency target are you optimizing for?" } });
+  });
+  await page.goto("/tutor");
+  await page.getByLabel("YOUR QUESTION").fill("How should I handle cache misses?");
+  await page.getByRole("button", { name: "Ask tutor" }).click();
+  await expect(page.getByText("What latency target are you optimizing for?")).toBeVisible();
+});
+
+test("AI tutor API rejects unknown challenge slugs", async ({ request }) => {
+  const response = await request.post("/api/tutor", {
+    data: {
+      mode: "review",
+      problemSlug: "not-a-real-challenge",
+      design: "This is a sufficiently long design that should still be rejected because the challenge does not exist.",
+    },
+  });
+  expect(response.status()).toBe(400);
+});
