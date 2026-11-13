@@ -1,7 +1,9 @@
 import { problems } from "@/lib/data";
 
 export const runtime = "nodejs";
-export const maxDuration = 35;
+export const maxDuration = 65;
+
+const PROVIDER_TIMEOUT_MS = 60_000;
 
 const MAX_BODY_LENGTH = 32_000;
 const MAX_DESIGN_LENGTH = 8_000;
@@ -24,28 +26,30 @@ function jsonError(error: string, status: number) {
 }
 
 function providerErrorMessage(status: number, model: string, detail?: string) {
-  const providerDetail = detail ? ` Gemini said: ${detail}` : "";
-  if (status === 400 && detail && /invalid auth key/i.test(detail)) {
-    return "Gemini says this API key is invalid. Create a key in Google AI Studio and replace GEMINI_API_KEY in .env.local, then restart the dev server.";
-  }
+  const providerDetail = detail ? ` OpenRouter said: ${detail}` : "";
   if (status === 401 || status === 403) {
-    return `Gemini rejected the API key or access. Verify GEMINI_API_KEY is a valid Google AI Studio key and that its API restrictions allow Gemini requests.${providerDetail}`;
+    return "OpenRouter rejected the API key or access. Check OPENROUTER_API_KEY and your account permissions.";
   }
-  if (status === 404) {
-    return `Gemini could not find model "${model}". Check GEMINI_MODEL.${providerDetail}`;
+  if (status === 402) {
+    return "OpenRouter could not serve this free request. Check your account balance and free-model availability.";
+  }
+  if (status === 404 || status === 400) {
+    return `OpenRouter could not use model "${model}". Check OPENROUTER_MODEL.${providerDetail}`;
   }
   if (status === 429) {
-    return `Gemini quota or rate limit reached. Check the API key's quota and billing settings, then try again later.${providerDetail}`;
+    return "OpenRouter's free-model limit was reached. Please try again later.";
   }
-  if (status === 400) {
-    return `Gemini rejected the request for model "${model}".${providerDetail}`;
+  if (status === 503 || status === 504) {
+    return "OpenRouter's free models are temporarily busy. Please try again shortly.";
   }
-  return `Gemini request failed (HTTP ${status}).${providerDetail}`;
+  return `OpenRouter request failed (HTTP ${status}).${providerDetail}`;
 }
 
 function providerErrorDetail(body: string) {
   try {
-    const result: unknown = JSON.parse(body);
+    const parsed: unknown = JSON.parse(body);
+    // Some upstream providers wrap errors in an array.
+    const result: unknown = Array.isArray(parsed) ? parsed[0] : parsed;
     if (!result || typeof result !== "object") return undefined;
     const error = (result as Record<string, unknown>).error;
     if (!error || typeof error !== "object") return undefined;
@@ -186,62 +190,61 @@ export async function POST(request: Request) {
     );
   }
 
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = process.env.OPENROUTER_API_KEY?.trim();
   if (!apiKey) {
     return jsonError(
-      "AI feedback is not configured. For local development, set GEMINI_API_KEY in .env.local and restart the server; for Vercel, add it in Project Settings → Environment Variables and redeploy.",
+      "AI feedback is not configured. For local development, set OPENROUTER_API_KEY in .env.local and restart the server; for Vercel, add it in Project Settings → Environment Variables and redeploy.",
       503,
     );
   }
 
+  const model = process.env.OPENROUTER_MODEL?.trim() || "openrouter/free";
+  if (model !== "openrouter/free" && !model.endsWith(":free")) {
+    return jsonError("Choose openrouter/free or an OPENROUTER_MODEL ending in :free. Paid models are disabled.", 503);
+  }
+
   const { instructions, input } = buildPrompt(body as TutorRequest, problem);
-  let providerResponse: Response;
+  let answer = "";
   try {
-    providerResponse = await fetch(
-      "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
-      {
+    const providerResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: process.env.GEMINI_MODEL || "gemini-3.8-flash",
+        model,
         messages: [
           { role: "system", content: instructions },
           { role: "user", content: input },
         ],
         max_tokens: 700,
       }),
-      signal: AbortSignal.timeout(30_000),
-      },
-    );
-  } catch {
-    return jsonError("The tutor took too long to respond. Please try again.", 504);
-  }
-
-  if (!providerResponse.ok) {
-    const model = process.env.GEMINI_MODEL || "gemini-3.8-flash";
-    const detail = providerErrorDetail(await providerResponse.text());
-    console.error("Gemini API request failed.", {
-      status: providerResponse.status,
-      model,
-      detail,
+      signal: AbortSignal.timeout(PROVIDER_TIMEOUT_MS),
     });
-    return jsonError(
-      providerErrorMessage(providerResponse.status, model, detail),
-      502,
-    );
-  }
 
-  let answer = "";
-  try {
+    if (!providerResponse.ok) {
+      const detail = providerErrorDetail(await providerResponse.text());
+      console.error("OpenRouter API request failed.", { status: providerResponse.status, model });
+      return jsonError(providerErrorMessage(providerResponse.status, model, detail), 502);
+    }
+
     const result = (await providerResponse.json()) as {
       choices?: Array<{ message?: { content?: string } }>;
     };
-    answer = result.choices?.[0]?.message?.content?.trim() ?? "";
-  } catch {
-    return jsonError("The AI provider returned an invalid response.", 502);
+    const content = result.choices?.[0]?.message?.content;
+    answer = typeof content === "string" ? content.trim() : "";
+  } catch (error) {
+    if (error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError")) {
+      return jsonError("The tutor took too long to respond. Please try again.", 504);
+    }
+    if (error instanceof SyntaxError) {
+      return jsonError("The AI provider returned an invalid response.", 502);
+    }
+    console.error("OpenRouter connection failed.", {
+      name: error instanceof Error ? error.name : "UnknownError",
+    });
+    return jsonError("Unable to connect to OpenRouter. Please try again.", 502);
   }
 
   if (!answer) return jsonError("The tutor returned an empty response. Please retry.", 502);

@@ -4,7 +4,7 @@ A practice-first system design learning platform built with Next.js App Router, 
 
 ## Run locally
 
-Requires Node.js 22.18+ and npm. Tutor responses require a Gemini API key; the rest of the app works without it.
+Requires Node.js 22.18+ and npm. Tutor responses require a OpenRouter API key; the rest of the app works without it.
 
 ```powershell
 cd "C:\Users\eduon\Downloads\System Design\systemdesign-ai"
@@ -13,7 +13,7 @@ Copy-Item .env.example .env.local
 npm run dev
 ```
 
-Set `GEMINI_API_KEY` in `.env.local` to enable tutor chat and design reviews. Never commit `.env.local`. Open http://localhost:3000. No database or account is required.
+Set `OPENROUTER_API_KEY` in `.env.local` to enable tutor chat and design reviews. Never commit `.env.local`. Open http://localhost:3000. No database or account is required.
 
 ## Phase 1 features
 
@@ -44,7 +44,7 @@ tests/                  Browser acceptance tests
 
 **Client components:** Navigation reads the active route; problem filters use React state; the workspace, dashboard, and lesson button use browser storage. The "use client" directive allows state, event handlers, and browser APIs. useSyncExternalStore provides consistent storage subscriptions without hydration mismatch.
 
-**Communication:** Server pages pass typed content as props to interactive components. Progress remains in browser storage. The tutor client sends bounded requests to `app/api/tutor/route.ts`, which validates the challenge and prompt, limits output, applies a best-effort per-instance request limit, and calls Gemini through its OpenAI-compatible Chat Completions endpoint with a server-only environment variable. Keeping the key on the server prevents it from being exposed in browser bundles.
+**Communication:** Server pages pass typed content as props to interactive components. Progress remains in browser storage. The tutor client sends bounded requests to `app/api/tutor/route.ts`, which validates the challenge and prompt, limits output, applies a best-effort per-instance request limit, and calls OpenRouter through its Chat Completions endpoint with a server-only environment variable. Keeping the key on the server prevents it from being exposed in browser bundles.
 
 The home architecture is an illustrative diagram, not a drag-and-drop editor. Authentication, PostgreSQL/Prisma, saved server submissions, and React Flow remain Phase 3.
 
@@ -77,9 +77,9 @@ The supplied .gitignore excludes dependencies, build output, environment files, 
 
 ## Vercel
 
-After pushing, import the GitHub repository into Vercel. Select Next.js as the framework, use the repository root as the project root (or systemdesign-ai if you commit the parent directory), keep the default install/build/output settings, and deploy. Add `GEMINI_API_KEY` in Vercel Project Settings → Environment Variables, then redeploy. `GEMINI_MODEL` is optional and defaults to `gemini-3.8-flash`. Vercel handles Next.js routing and production hosting.
+After pushing, import the GitHub repository into Vercel. Select Next.js as the framework, use the repository root as the project root (or systemdesign-ai if you commit the parent directory), keep the default install/build/output settings, and deploy. Add `OPENROUTER_API_KEY` in Vercel Project Settings → Environment Variables, then redeploy. `OPENROUTER_MODEL` is optional and defaults to `openrouter/free`. Only `openrouter/free` and model IDs ending in `:free` are accepted; paid models are disabled. Free requests remain subject to account quotas and provider availability. Vercel handles Next.js routing and production hosting.
 
-The tutor sends prompts to Google Gemini; do not include personal or confidential information. The in-memory rate limit is best-effort and resets across serverless instances. Before broadly publicizing the endpoint, set provider-side usage limits and add a shared rate limiter or authentication. Authentication, PostgreSQL/Prisma, saved server submissions, and interactive architecture diagrams remain future work.
+The tutor sends prompts to OpenRouter and the selected model provider; do not include personal or confidential information. The in-memory rate limit is best-effort and resets across serverless instances. Before broadly publicizing the endpoint, set provider-side usage limits and add a shared rate limiter or authentication. Authentication, PostgreSQL/Prisma, saved server submissions, and interactive architecture diagrams remain future work.
 
 ## Dependency audit
 
